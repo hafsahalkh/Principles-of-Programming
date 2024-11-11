@@ -1,27 +1,9 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog, scrolledtext, messagebox
-import re
 
-# Import your existing lexer function here
-# from lexer import lexical_analyzer  # Uncomment if lexer function is in a separate lexer.py file
-
-# Define patterns for diffeent token types
-token_patterns = [
-    ("KEYWORD", r"\b(int|float|if|else|while|return|void|bool|char)\b"),
-    ("IDENTIFIER", r"\b[a-zA-Z_][a-zA-Z0-9_]*\b"),
-    ("NUMBER", r"\b\d+(\.\d+)?\b"),
-    ("OPERATOR", r"[+\-*/=<>!&|]"),
-    ("PUNCTUATION", r"[;{},()]"),
-]
-
-def lexical_analyzer(source_code):
-    tokens = []
-    for token_type, pattern in token_patterns:
-        for match in re.finditer(pattern, source_code):
-            lexeme = match.group(0)
-            tokens.append((token_type, lexeme))
-    return tokens
+# Import the tokenize function and symbol_table variable from lexer.py
+from lexer import tokenize, symbol_table
 
 # Function to load a file and display its content
 def load_file():
@@ -32,50 +14,51 @@ def load_file():
             input_text.delete(1.0, tk.END)
             input_text.insert(tk.END, content)
 
-# Function to run the lexical analyzer and display results
+# Function to run the lexer and display only the symbol table
 def run_lexer():
     source_code = input_text.get(1.0, tk.END)
     if not source_code.strip():
-        messagebox.showwarning("no input!", "please load or enter source code to analyze.")
+        messagebox.showwarning("no input!", "please load or enter source code to analyze <3")
         return
     
-    tokens = lexical_analyzer(source_code)
-    result_text.delete(1.0, tk.END)  # clear previous results
+    # Run the lexer to generate tokens and populate the symbol table
+    tokenize(source_code)  # Tokenizes the source code and populates the symbol table
 
-    # Display tokens and lexemes
-    for token_type, lexeme in tokens:
-        result_text.insert(tk.END, f"Token: {token_type}, Lexeme: {lexeme}\n")
+    result_text.delete(1.0, tk.END)  # Clear previous results
 
-# setting up the GUI window using tkinter
-window = tk.Tk()   
+    # Display the symbol table with updated scopes and formatting
+    result_text.insert(tk.END, "Symbol Table:\n")
+    result_text.insert(tk.END, f"{'Lexeme':<15}{'Token Class':<15}{'Symbol Type':<15}{'Data Type':<12}{'Value':<10}{'Scope':<10}\n")
+    result_text.insert(tk.END, "-" * 70 + "\n")
+    for entry in symbol_table:
+        lexeme = entry["lexeme"]
+        token_class = entry["token_class"]
+        symbol_type = entry["symbol_type"]
+        data_type = entry["data_type"] if entry["data_type"] else "None"
+        value = entry["value"] if entry["value"] else "0"
+        scope = entry["scope"]
+        result_text.insert(tk.END, f"{lexeme:<15}{token_class:<15}{symbol_type:<15}{data_type:<12}{value:<10}{scope}\n")
 
-# setting the bkg color and title 
+
+# Setting up the GUI window using tkinter
+window = tk.Tk()
 window.configure(bg="#f9baff")  
 window.title("Fall 2024: Group 2 Programming Languages Lexical Analyzer GUI")
 
-# setting the window width and height
-window_width = 600
-window_height = 600
-
-# i want to center the window whenever it opens
+# Set the window size and center it on the screen
+window_width = 650
+window_height = 650
 screen_width = window.winfo_screenwidth()
 screen_height = window.winfo_screenheight()
-
-# calculate the center position of the window on the screen
 x = (screen_width // 2) - (window_width // 2)
 y = (screen_height // 2) - (window_height // 2)
-
 window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-
-  
-
 # Input text area
-label = tk.Label(window, text="source code:", font=("Helvetica", 10))  # Set font to Helvetica, size 12
+label = tk.Label(window, text="Source Code:", font=("Helvetica", 10))
 label.pack(pady=2)
-input_text = scrolledtext.ScrolledText(window, wrap=tk.WORD, height=10)
+input_text = scrolledtext.ScrolledText(window, wrap=tk.WORD, height=10, bg="#fcdfff")
 input_text.pack(fill=tk.BOTH, expand=True)
-input_text.config(bg="#fcdfff")  
 
 # Define a custom style for rounded buttons
 style = ttk.Style()
@@ -86,20 +69,18 @@ style.map("Rounded.TButton", background=[("active", "#d1d1e0")])
 button_frame = tk.Frame(window)
 button_frame.pack(fill=tk.X, pady=2)
 
-# Create rounded buttons using the custom style
-load_button = ttk.Button(button_frame, text="load file", style="Rounded.TButton", command=load_file)
+# Load and Run Lexer buttons
+load_button = ttk.Button(button_frame, text="Load File", style="Rounded.TButton", command=load_file)
 load_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-run_button = ttk.Button(button_frame, text="run lexer", style="Rounded.TButton", command=run_lexer)
+run_button = ttk.Button(button_frame, text="Run Lexer", style="Rounded.TButton", command=run_lexer)
 run_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-# Result text area
-label2 = tk.Label(window, text="tokens and lexemes:", font=("Helvetica", 10))
+# Result text area for displaying only the symbol table
+label2 = tk.Label(window, text="Symbol Table:", font=("Helvetica", 10))
 label2.pack(pady=2)
-result_text = scrolledtext.ScrolledText(window, wrap=tk.WORD, height=20)
+result_text = scrolledtext.ScrolledText(window, wrap=tk.WORD, height=20, bg="#fcdfff")
 result_text.pack(fill=tk.BOTH, expand=True)
-result_text.config(bg="#fcdfff")
-
 
 # Run the GUI loop
 window.mainloop()
